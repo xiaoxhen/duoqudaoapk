@@ -1,0 +1,99 @@
+apply plugin: 'com.android.application'
+/*
+  打包所有发布渠道命令：
+       gradlew assembleRelease
+   打包指定发布渠道命令：
+   gradlew assembleXXXRelease
+ */
+
+def releaseTime() {
+    return new Date().format("yyyy-MM-dd", TimeZone.getTimeZone("UTC"))
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
+    defaultConfig {
+        applicationId "com.example.administrator.wolaile"
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        // dex突破65535的限制
+        multiDexEnabled true
+        // 默认是umeng的渠道
+        manifestPlaceholders = [UMENG_CHANNEL_VALUE: "umeng"]
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+//    signingConfigs {
+//        debug {
+//            // No debug config
+//        }
+//
+//        release {
+//            storeFile file("../yourapp.keystore")
+//            storePassword "your password"
+//            keyAlias "your alias"
+//            keyPassword "your password"
+//        }
+//    }
+
+    buildTypes {
+        debug {
+            // 显示Log
+            buildConfigField "boolean", "LOG_DEBUG", "true"
+            versionNameSuffix "-debug"
+            minifyEnabled false
+            zipAlignEnabled false
+            shrinkResources false
+//            signingConfig signingConfigs.debug
+        }
+        release {
+            // 不显示Log
+            buildConfigField "boolean", "LOG_DEBUG", "false"
+
+            minifyEnabled true
+            zipAlignEnabled true
+            // 移除无用的resource文件
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            signingConfig signingConfigs.release
+
+            applicationVariants.all { variant ->
+                variant.outputs.each {
+                    output ->
+                        def outputFile = output.outputFile
+                        // 输出apk名称为boohee_v1.0_2015-01-15_wandoujia.apk
+                        if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                            def fileName = "haohaizi${defaultConfig.versionName}_${releaseTime()}_${variant.productFlavors[0].name}.apk"
+                            output.outputFile = new File(outputFile.parent, fileName)
+                        }
+                }
+            }
+        }
+    }
+    // 友盟多渠道打包
+    productFlavors {
+        wandoujian {}
+        xiaomi {}
+        anzhi {}
+        baidu {}
+    }
+    productFlavors.all { flavor ->
+        flavor.manifestPlaceholders = [UMENG_CHANNEL_VALUE: name]
+    }
+
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:23.1.1'
+    testCompile 'junit:junit:4.12'
+}
